@@ -41,10 +41,10 @@
     "accessibility"
   ],
   "license": "MIT",
-  "author": "asus",
+  "author": "ssstarl",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/<your-account>/dsh-voice-announcer.git"
+    "url": "git+https://github.com/ssstarl/dsh-pet-speak.git"
   },
-  "homepage": "https://github.com/<your-account>/dsh-voice-announcer"
+  "homepage": "https://github.com/ssstarl/dsh-pet-speak"
 }
