@@ -1,0 +1,18 @@
+# bundle 栈：把本插件挂进 DSH 的 cordis 插件树。
+#
+# 这里只放**发布用的通用默认值**。每台机器的私人配置（桌宠路径、音色偏好）
+# 请写到用户级覆盖文件：%USERPROFILE%\.dsh-pet-speak.json
+#（优先级：内置默认 < 本文件 < 用户覆盖文件）
+#
+# sink: onecore —— 离线、零配置，任何人装上就有声音。
+# 想让自己的桌宠来念，在覆盖文件里写 {"sink": "pet", "petLockPath": "..."} 即可。
+- insert:
+    - id: pet-speak
+      name: 'dsh-pet-speak'
+      config:
+        sink: onecore
+        voice: Yaoyao
+        speakMode: ending
+        minReplyChars: 120
+        quietHours: ''
+        escCancel: true

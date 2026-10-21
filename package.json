@@ -1,0 +1,50 @@
+{
+  "name": "dsh-pet-speak",
+  "version": "0.2.0",
+  "description": "Let your desktop pet speak for the AI: hand each turn's concluding line to a local pet (pet/say bridge), with OneCore/SAPI/command fallbacks and ESC to stop.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "scripts/speak.ps1",
+    "scripts/speak-onecore.ps1",
+    "demo-voices.cmd",
+    "icon.svg",
+    "README.md",
+    "README.zh.md",
+    "PET-PROTOCOL.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.1.7-rc.2 || >=0.2.0-rc.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "tts",
+    "voice",
+    "announce",
+    "accessibility"
+  ],
+  "license": "MIT",
+  "author": "asus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/<your-account>/dsh-voice-announcer.git"
+  },
+  "homepage": "https://github.com/<your-account>/dsh-voice-announcer"
+}
