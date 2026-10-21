@@ -1,55 +1,52 @@
-# dsh-pet-speak
+# dsh-deskPal
 
-**Let your desktop pet do the talking for the AI.**
+**Let your desktop pal do the talking for the AI.**
 
-Every time a turn ends, `dsh-pet-speak` picks one short line from the reply and hands it to
-**your desktop pet** — she shows it in her bubble and says it in her own voice, while you keep
-looking at whatever you were doing. Press **ESC** to make her stop.
+Every time a turn ends, `dsh-deskPal` takes one short line from the reply and hands it to your
+desktop companion — she shows it in her bubble and says it in her own voice while you keep
+looking at whatever you were doing. Press **ESC** and she stops.
 
-No compatible pet around? It falls back to the system voice (OneCore), so the feature never
-just goes silent.
+No compatible companion running? It falls back to the system voice, so it never just goes silent.
 
 [中文说明](README.zh.md) · [Bridge protocol](PET-PROTOCOL.md)
 
-## Why this one
+---
 
-There are already TTS plugins that read everything aloud. This one does the opposite:
+## What it does today
 
-| | This plugin | Typical announcer |
-|---|---|---|
-| Where the voice comes from | **your pet's own voice + bubble** | the system voice |
-| What is spoken | **one concluding line**, not the whole reply | the whole reply / every sentence |
-| Stopping it | **ESC, instantly** | none |
-| Adding an engine | **`command` sink**: any TTS CLI | fixed engines |
-| Extra model cost | **none** — the line is taken from the reply you already paid for | varies |
+Everything below is implemented and verified on a real machine.
 
-## How it works
+### Spoken brief
 
-```
-turn ends
-  → pick the line:  「播报: …」 if present, else the last sentence
-  → hand it to a sink:  pet → onecore → sapi   (first one available wins)
-  → ESC stops the player
-```
+- One line per turn: the `播报:` line if the reply has one, otherwise the **last sentence**.
+- **ESC stops playback instantly.**
+- Four sinks, picked in order until one works: desktop companion → OneCore → SAPI → (`command` never falls back).
+- **Zero extra model calls** — the text comes from the reply you already paid for.
+- Two modes: `ending` (conclusion only) or `full` (whole reply, code blocks stripped).
+- Quiet hours, short-reply skip (< 120 chars), same-line de-duplication within 5 s.
 
-Nothing calls a model again. The text comes from the reply you already have.
+### Desktop companion bridge
 
-## Sinks
+- Writes one `pet/say` JSON line into a local folder; a companion that tails that folder speaks it.
+- The protocol is public and small: [PET-PROTOCOL.md](PET-PROTOCOL.md) (~30 lines on the pet side).
+- `petLockPath` makes it skip the companion when she is not running, instead of writing into the void.
+
+### Voice engines
 
 | sink | What happens | Needs | ESC |
 |---|---|---|---|
-| `pet` | The line is appended to the local bridge; **your pet speaks it** | a pet that reads `pet/say` (see [PET-PROTOCOL.md](PET-PROTOCOL.md)) | ❌ (future) |
-| `onecore` (default) | Windows WinRT voices (e.g. `Yaoyao`), offline | nothing | ✅ |
+| `pet` | Your companion speaks the line in her own voice | a pet that reads `pet/say` | ❌ (later) |
+| `onecore` (default) | Windows WinRT voices (`Yaoyao` / `Huihui` / `Kangkang`), offline | nothing | ✅ |
 | `sapi` | Windows `System.Speech`, offline, robotic | nothing | ✅ |
-| `command` | Runs **your own** TTS command with `{text}` | your TTS | up to you |
+| `command` | Runs **your** TTS command with `{text}` | your TTS | depends |
 
-Fallback chain: `pet` (skipped when `petLockPath` says she is not running) → `onecore` → `sapi`.
+`command` is executed **without a shell**, so quotes, `;` and `&` in the text are passed through
+verbatim. That makes it a drop-in slot for edge-tts, a local GPT-SoVITS, or a curl call to your
+own TTS server.
 
-## Connect your pet
+### Configuration
 
-If your pet speaks the `pet/say` JSON-lines protocol (documented in [PET-PROTOCOL.md](PET-PROTOCOL.md),
-~30 lines of code on the pet side), point the plugin at it with a **user-level override file** —
-`%USERPROFILE%\.dsh-pet-speak.json` (or the path in `DSH_PET_SPEAK_CONFIG`):
+User-level override file — `%USERPROFILE%\.dsh-pet-speak.json` (or `DSH_PET_SPEAK_CONFIG`):
 
 ```json
 {
@@ -59,27 +56,21 @@ If your pet speaks the `pet/say` JSON-lines protocol (documented in [PET-PROTOCO
 ```
 
 Precedence: built-in defaults < the bundle's `cordis.patch.yml` < this file.
-The shipped patch deliberately contains **no personal paths**, so your pet stays yours.
-
-`petLockPath` is optional but recommended: when the lock file is missing (pet not running),
-the plugin **skips** the pet and uses the system voice instead of writing into the void.
-
-## Configuration
+The shipped patch contains **no personal paths**.
 
 | key | default | meaning |
 |---|---|---|
 | `sink` | `onecore` | `pet` / `onecore` / `sapi` / `command` |
 | `voice` | `Yaoyao` | OneCore voice, fuzzy-matched against installed `DisplayName`s |
-| `command` | `""` | command template, must contain `{text}`; executed **without a shell** |
+| `command` | `""` | command template, must contain `{text}` |
 | `commandTimeoutMs` | `15000` | kill the command after this long |
-| `speakMode` | `ending` | `ending` = last sentence / `播报:` line; `full` = whole reply (code blocks stripped) |
+| `speakMode` | `ending` | `ending` = conclusion, `full` = whole reply |
 | `minReplyChars` | `120` | shorter replies are not spoken |
 | `maxSpeakChars` | by mode | `ending` → 60, `full` → 400 |
 | `quietHours` | `""` | `23:00-08:00`, empty = off |
 | `escCancel` | `true` | allow ESC to stop (`onecore` / `sapi`) |
-| `maxTurns` | `0` | stop after N announcements (debugging) |
-| `petBridgeDir` | `""` | bridge folder (default `%APPDATA%\dsh-pet-bridge`) |
-| `petLockPath` | `""` | pet's `overlay-instance.lock`; missing ⇒ skip the pet sink |
+| `petBridgeDir` | `""` | bridge folder, default `%APPDATA%\dsh-pet-bridge` |
+| `petLockPath` | `""` | companion's `overlay-instance.lock`; missing ⇒ skip `pet` |
 
 ### The `播报:` convention
 
@@ -89,34 +80,35 @@ End a reply with a line like
 播报：余额还剩十一块二，省着点花。
 ```
 
-and that is exactly what gets spoken — 20 characters that you wrote anyway. Without the line the
-plugin falls back to the last sentence. Either way: no extra tokens.
+and exactly that gets spoken — twenty characters you were writing anyway. Without such a line the
+last sentence is used. Either way: no extra tokens.
 
 ## Install
 
 ```bash
 cd %USERPROFILE%\.dsh\profiles\desktop
-pnpm add dsh-pet-speak
-# append "dsh-pet-speak" to dsh.profile.bundles in package.json
+pnpm add dsh-deskPal
+# append "dsh-deskPal" to dsh.profile.bundles in package.json
 # restart DSH
 ```
 
-Windows only for now (`WinRT` / `System.Speech` / `GetAsyncKeyState`).
-To audition the installed voices, run `demo-voices.cmd`.
+Windows only for now (WinRT / System.Speech / `GetAsyncKeyState`).
+To audition the installed system voices, run `demo-voices.cmd`.
 
 ## Privacy
 
-- No network requests, no telemetry.
+- No network requests of its own, no telemetry.
 - `onecore` / `sapi` synthesise locally; only the text you already see reaches Windows.
 - `pet` appends one JSON line to a **local** folder.
-- `command` runs **your** command — including any network use you configure.
-- Only an instance/owner log is written, under `%LOCALAPPDATA%\dsh-voice-announcer`.
+- `command` runs **your** command, including any network use you configure.
+- The only file written is an instance/owner log under `%LOCALAPPDATA%\dsh-voice-announcer`.
 
-## Limitations
+## Current limits
 
-- The `pet` sink cannot be interrupted by ESC yet (audio plays inside the pet process).
-- No settings UI yet — configuration lives in `cordis.patch.yml`.
-- `command` sink has no ESC; it stops when your command exits or times out.
+- Windows only.
+- The `pet` sink cannot be interrupted by ESC yet (audio plays inside the companion process).
+- No settings UI — configuration is the JSON file above.
+- `command` has no ESC; it stops when your command exits or times out.
 
 ## License
 

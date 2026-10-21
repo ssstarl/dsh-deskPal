@@ -11,9 +11,9 @@ echo Remote status:
 git remote -v
 echo.
 
-git remote add origin https://github.com/ssstarl/dsh-pet-speak.git 2>nul
+git remote add origin https://github.com/ssstarl/dsh-deskPal.git 2>nul
 git branch -M main
-echo Pushing to https://github.com/ssstarl/dsh-pet-speak ...
+echo Pushing to https://github.com/ssstarl/dsh-deskPal ...
 git push -u origin main
 if errorlevel 1 (
   echo.
